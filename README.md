@@ -17,3 +17,10 @@ The rapid adoption of services related technologies, such as cloud computing, ha
 | ServeNet-BERT | 0.681        | **0.905**    | 0.668     | 0.653     | 0.654     |
 | Ours          | **0.715**    | 0.890        | **0.703** | **0.689** | **0.691** |
 
+
+
+# Run
+
+**train** python main.py --mode train
+
+**eval**  python main.py --mode eval
