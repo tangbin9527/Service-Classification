@@ -42,6 +42,10 @@ def parse_args():
     parser.add_argument("--mode", choices=["train", "eval"], default='train',
                         help="The mode to run. The `train` mode trains a model;"
                         " the `eval` mode evaluat models in a test set ")
+    parser.add_argument("--save_every", default=5,
+                        type=int, help="save model every epoch")
+    parser.add_argument("--reload", default=5,
+                        type=int, help="load model every epoch")
 
     # train parameters
     parser.add_argument("--batch_size", default=32,
