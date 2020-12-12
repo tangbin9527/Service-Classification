@@ -20,7 +20,7 @@ logging.basicConfig(
 import os
 gpus = tf.config.list_physical_devices(device_type='GPU')
 # print(gpus)
-tf.config.set_visible_devices(devices=gpus[0], device_type='GPU')
+tf.config.set_visible_devices(devices=gpus[5], device_type='GPU')
 # pip install -i http://mirrors.aliyun.com/pypi/simple/ --trusted-host mirrors.aliyun.com tensorflow-gpu==2.2.0
 
 class ServiceClassification:
@@ -30,7 +30,7 @@ class ServiceClassification:
         self.path = self.args.data_path
         self.train_data_path = self.path + self.args.train_data_path
         self.test_data_path = self.path + self.args.test_data_path
-        self.model_path = self.path + self.args.model_name
+        self.model_name = self.args.model_name
         
         self.epoch = self.args.epoch
 
@@ -63,6 +63,16 @@ class ServiceClassification:
         validation_steps = len(testdata)
         return testdata, validation_steps
 
+    def save_model_epoch(self, model, epoch):
+        if not os.path.exists(self.path+'models/' + self.model_name+'/'):
+            os.makedirs(self.path+'models/' + self.model_name +'/')
+        model.save("{}models/{}/epo{:d}.hdf5".format(self.path, self.model_name, epoch), overwrite=True)
+
+    def load_model_epoch(self, model, epoch):
+        assert os.path.exists(
+            "{}models/{}/epo{:d}.hdf5".format(self.path, self.model_name, epoch)), "Weights at epoch {:d} not found".format(epoch)
+        model.load("{}models/{}/epo{:d}.hdf5".format(self.path, self.model_name, epoch))
+
     def Precision(self, Y_test, predY_test):
         return metrics.precision_score(Y_test, predY_test, average='macro')
 
@@ -90,23 +100,7 @@ class ServiceClassification:
         return predY_test, test_label
     
     def train(self, model):
-        best_top5 = 0
-        best_top1 = 0
-        best_p = 0
-        best_r = 0
-        best_f1 = 0
-
-        best_epoch = 0
-        best_model = 0
-
-        best_list = []
-
-        top5_list = []
-        top1_list =[]
-        p_list = []
-        r_list = []
-        f_list = []
-
+        save_every = self.args.save_every
         traindata, tranning_steps_per_epoch = self.load_train_data()
         testdata, validation_steps = self.load_test_data()
         for i in range(self.epoch):
@@ -127,35 +121,15 @@ class ServiceClassification:
             logger.info("recall = " + str(recall))
             logger.info("f1 = " + str(f1))
 
-            top5_list.append(top5error_test)
-            top1_list.append(top1error_test)
-            p_list.append(precision)
-            r_list.append(recall)
-            f_list.append(f1)
-
-            if f1 > best_f1:
-                best_top5 = top5error_test
-                best_top1 = top1error_test
-                best_p = precision
-                best_r = recall
-                best_f1 = f1
-                best_epoch = i+1
-                model.save(self.model_path)
-
-            logger.info("best epoch = {} best f1 = {}".format(best_epoch, best_f1))
             print(metrics.classification_report(test_label, non_onehot_pred_test, labels=range(0, 50), output_dict=True))
-        best_list.append([best_top5, best_top1, best_p, best_r, best_f1])
+            if save_every is not None and (i+1) % save_every == 0:
+                self.save_model_epoch(model, i+1)
+                # model.save(self.model_path)
         
-        logger.info(top5_list)
-        logger.info(top1_list)
-        logger.info(p_list)
-        logger.info(r_list)
-        logger.info(f_list)
-        logger.info(best_list)
 
     def eval(self, model):
         testdata, validation_steps = self.load_test_data()
-        model.load(self.model_path)
+        # model.load(self.model_path)
 
         loss_test, top5error_test, top1error_test = model.evaluate(self.test_generator(testdata), steps=validation_steps)
         logger.info("top1 accuracy = " + str(top1error_test))
@@ -192,6 +166,8 @@ def main():
     
     if args.mode == "eval":
         print("eval model")
+        if args.reload > 0:
+            classifier.load_model_epoch(model, args.reload)
         classifier.eval(model)
 
 
