@@ -24,7 +24,7 @@ def parse_args():
                         type=int, help="Max num of the name sequence length")
 
     # model parameters
-    parser.add_argument("--model_name", default="model/cobert.hdf5",
+    parser.add_argument("--model_name", default="cobert",
                         type=str, help="Name of model")
     parser.add_argument("--embedding_size", default=768,
                         type=int, help="Dimensionality of word embedding")
